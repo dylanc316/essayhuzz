@@ -15,12 +15,10 @@ const styles = {
     alignItems: 'center',
     height: '100vh',
     margin: 0,
-    backgroundColor: '000000',
   },
   text: {
     fontSize: '50px',
     fontWeight: 'bold',
-    color: '0000ff',
   },
 };
 
