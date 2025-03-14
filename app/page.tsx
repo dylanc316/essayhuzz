@@ -3,7 +3,7 @@ import React from 'react';
 const ComingSoon: React.FC = () => {
   return (
     <div style={styles.container}>
-      <h1 style={styles.text}>Coming Soon...</h1>
+      <h1 style={styles.text}>Coming Soon (angelo and dylan)...</h1>
     </div>
   );
 };
