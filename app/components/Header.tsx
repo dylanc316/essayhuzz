@@ -3,17 +3,24 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth } from '../context/AuthContext';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const isActive = (path: string) => {
     return pathname === path;
   };
 
+  const handleLogout = async () => {
+    await logout();
+    // No need for router.push as the AuthContext will handle redirects
+  };
+
   return (
-    <header className="border-b border-gray-200 dark:border-gray-800 py-4">
+    <header className="border-b border-gray-800 py-4">
       <div className="container mx-auto px-4 flex justify-between items-center">
         <Link href="/" className="text-2xl font-bold">
           EssayHuzz
@@ -22,47 +29,52 @@ export default function Header() {
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           <Link 
+            href="/dashboard" 
+            className={`hover:text-blue-400 transition ${
+              isActive('/dashboard') ? 'text-blue-400 font-medium' : ''
+            }`}
+          >
+            Dashboard
+          </Link>
+          
+          <Link 
             href="/analyze" 
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition ${
-              isActive('/analyze') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
+            className={`hover:text-blue-400 transition ${
+              isActive('/analyze') ? 'text-blue-400 font-medium' : ''
             }`}
           >
             Analyze
           </Link>
           
           <Link 
-            href="/browse" 
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition ${
-              isActive('/browse') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
-            }`}
-          >
-            Browse
-          </Link>
-          
-          <Link 
-            href="/write" 
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition ${
-              isActive('/write') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
-            }`}
-          >
-            Write
-          </Link>
-          
-          <Link 
             href="/about" 
-            className={`hover:text-blue-600 dark:hover:text-blue-400 transition ${
-              isActive('/about') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
+            className={`hover:text-blue-400 transition ${
+              isActive('/about') ? 'text-blue-400 font-medium' : ''
             }`}
           >
             About
           </Link>
           
-          <Link 
-            href="/login" 
-            className="px-4 py-2 bg-black text-white dark:bg-white dark:text-black rounded-md hover:opacity-90 transition"
-          >
-            Sign In
-          </Link>
+          {isAuthenticated ? (
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-400">
+                {user?.name}
+              </span>
+              <button
+                onClick={handleLogout}
+                className="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-md transition"
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <Link 
+              href="/login" 
+              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-md transition"
+            >
+              Sign In
+            </Link>
+          )}
         </nav>
 
         {/* Mobile menu button */}
@@ -89,12 +101,22 @@ export default function Header() {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden py-3 px-4 border-t border-gray-200 dark:border-gray-800">
+        <div className="md:hidden py-3 px-4 border-t border-gray-800">
           <nav className="flex flex-col space-y-3">
+            <Link 
+              href="/dashboard" 
+              className={`py-2 ${
+                isActive('/dashboard') ? 'text-blue-400 font-medium' : ''
+              }`}
+              onClick={() => setMobileMenuOpen(false)}
+            >
+              Dashboard
+            </Link>
+            
             <Link 
               href="/analyze" 
               className={`py-2 ${
-                isActive('/analyze') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
+                isActive('/analyze') ? 'text-blue-400 font-medium' : ''
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
@@ -102,42 +124,39 @@ export default function Header() {
             </Link>
             
             <Link 
-              href="/browse" 
-              className={`py-2 ${
-                isActive('/browse') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Browse
-            </Link>
-            
-            <Link 
-              href="/write" 
-              className={`py-2 ${
-                isActive('/write') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
-              }`}
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Write
-            </Link>
-            
-            <Link 
               href="/about" 
               className={`py-2 ${
-                isActive('/about') ? 'text-blue-600 dark:text-blue-400 font-medium' : ''
+                isActive('/about') ? 'text-blue-400 font-medium' : ''
               }`}
               onClick={() => setMobileMenuOpen(false)}
             >
               About
             </Link>
             
-            <Link 
-              href="/login" 
-              className="py-2 text-blue-600 dark:text-blue-400 font-medium"
-              onClick={() => setMobileMenuOpen(false)}
-            >
-              Sign In
-            </Link>
+            {isAuthenticated ? (
+              <>
+                <span className="py-2 text-gray-400">
+                  {user?.name}
+                </span>
+                <button
+                  onClick={async () => {
+                    await handleLogout();
+                    setMobileMenuOpen(false);
+                  }}
+                  className="py-2 text-blue-400 font-medium"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link 
+                href="/login" 
+                className="py-2 text-blue-400 font-medium"
+                onClick={() => setMobileMenuOpen(false)}
+              >
+                Sign In
+              </Link>
+            )}
           </nav>
         </div>
       )}

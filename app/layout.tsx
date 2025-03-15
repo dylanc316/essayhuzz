@@ -15,20 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "EssayHuzz - AI-Powered Essay Analysis",
-  description: "Upload your essay or paper and get instant AI analysis, summaries, and insights",
+  description: "Upload your essay or paper for instant AI analysis, summaries, and insights",
   keywords: "essay analysis, AI, academic writing, education, essay help",
-  authors: [
-    { name: "Angelo Rizzieri" },
-    { name: "Dylan Cheng" }
-  ],
-  openGraph: {
-    title: "EssayHuzz - AI-Powered Essay Analysis",
-    description: "Upload your essay or paper and get instant AI analysis, summaries, and insights",
-    url: "https://essayhuzz.com",
-    siteName: "EssayHuzz",
-    locale: "en_US",
-    type: "website",
-  },
 };
 
 export default function RootLayout({
@@ -37,7 +25,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className="dark">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         suppressHydrationWarning

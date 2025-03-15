@@ -5,9 +5,11 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { useAuth } from '../context/AuthContext';
 
 export default function Signup() {
   const router = useRouter();
+  const { signup } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -29,37 +31,31 @@ export default function Signup() {
   };
   
   const validateForm = (): boolean => {
-    // Reset error
     setError(null);
     
-    // Check if all fields are filled
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.confirmPassword) {
       setError('All fields are required');
       return false;
     }
     
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address');
       return false;
     }
     
-    // Check password length
-    if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters long');
+    if (formData.password.length < 6) {
+      setError('Password must be at least 6 characters long');
       return false;
     }
     
-    // Check if passwords match
     if (formData.password !== formData.confirmPassword) {
       setError('Passwords do not match');
       return false;
     }
     
-    // Check terms agreement
     if (!formData.agreeToTerms) {
-      setError('You must agree to the Terms of Service and Privacy Policy');
+      setError('You must agree to the Terms of Service');
       return false;
     }
     
@@ -76,21 +72,23 @@ export default function Signup() {
     try {
       setIsLoading(true);
       
-      // This is a placeholder for the actual API call
-      // In a real implementation, you would:
-      // 1. Send the form data to your backend API
-      // 2. Create the user account
-      // 3. Handle authentication (e.g., set cookies, JWT token)
+      // Use the signup function from AuthContext
+      const success = await signup({
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        email: formData.email,
+        password: formData.password
+      });
       
-      // Simulating API delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Redirect to home page or dashboard after successful signup
-      router.push('/');
+      if (success) {
+        router.push('/dashboard');
+      } else {
+        setError('Account creation failed. Please try again.');
+      }
       
     } catch (err) {
       console.error('Signup error:', err);
-      setError('An error occurred during signup. Please try again.');
+      setError('An error occurred during registration. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -100,12 +98,12 @@ export default function Signup() {
     <div className="flex flex-col min-h-screen">
       <Header />
       <main className="flex-grow flex items-center justify-center py-12 px-4">
-        <div className="w-full max-w-md p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
+        <div className="w-full max-w-md card p-8">
           <h1 className="text-2xl font-bold text-center mb-6">Create an Account</h1>
           
           {error && (
-            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
-              <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+            <div className="mb-6 p-4 bg-red-900/20 border border-red-800 rounded-md">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
           
@@ -118,7 +116,7 @@ export default function Signup() {
                   name="firstName"
                   type="text" 
                   placeholder="First name" 
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="input"
                   value={formData.firstName}
                   onChange={handleChange}
                 />
@@ -130,7 +128,7 @@ export default function Signup() {
                   name="lastName"
                   type="text" 
                   placeholder="Last name" 
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
+                  className="input" 
                   value={formData.lastName}
                   onChange={handleChange}
                 />
@@ -144,7 +142,7 @@ export default function Signup() {
                 name="email"
                 type="email" 
                 placeholder="Enter your email" 
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
+                className="input" 
                 value={formData.email}
                 onChange={handleChange}
               />
@@ -157,12 +155,12 @@ export default function Signup() {
                 name="password"
                 type="password" 
                 placeholder="Create a password" 
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
+                className="input" 
                 value={formData.password}
                 onChange={handleChange}
               />
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                Must be at least 8 characters
+              <p className="mt-1 text-xs text-gray-400">
+                Must be at least 6 characters
               </p>
             </div>
             
@@ -173,7 +171,7 @@ export default function Signup() {
                 name="confirmPassword"
                 type="password" 
                 placeholder="Confirm your password" 
-                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white" 
+                className="input" 
                 value={formData.confirmPassword}
                 onChange={handleChange}
               />
@@ -190,23 +188,19 @@ export default function Signup() {
               />
               <label htmlFor="agreeToTerms" className="ml-2 text-sm">
                 I agree to the{" "}
-                <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
+                <Link href="#" className="text-blue-400 hover:underline">
                   Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link href="#" className="text-blue-600 dark:text-blue-400 hover:underline">
-                  Privacy Policy
                 </Link>
               </label>
             </div>
             
             <button 
               type="submit" 
-              className="w-full py-2 px-4 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
+              className="btn-primary w-full flex items-center justify-center"
               disabled={isLoading}
             >
               {isLoading ? (
-                <span className="flex items-center justify-center">
+                <span className="flex items-center">
                   <svg 
                     className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" 
                     xmlns="http://www.w3.org/2000/svg" 
@@ -236,9 +230,9 @@ export default function Signup() {
           </form>
           
           <div className="mt-6">
-            <p className="text-center">
+            <p className="text-center text-gray-400">
               Already have an account?{" "}
-              <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">
+              <Link href="/login" className="text-blue-400 hover:underline">
                 Sign in
               </Link>
             </p>
