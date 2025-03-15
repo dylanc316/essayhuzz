@@ -13,17 +13,11 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // In a real app, you would:
-    // 1. Check if user already exists
-    // 2. Hash the password
-    // 3. Create user in database
-    
     // For demo purposes, just simulate a successful registration
     const newUser = {
       id: '123',
       name: `${firstName} ${lastName}`,
-      email: email,
-      // Don't include password in the response
+      email,
     };
     
     return NextResponse.json({ 
