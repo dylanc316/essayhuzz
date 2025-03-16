@@ -4,12 +4,20 @@ import connectToDatabase from '@/lib/db';
 import Analysis from '@/models/Analysis';
 import { getUserFromToken } from '@/lib/tokens';
 
-export async function GET(
-  request: NextRequest,
-  context: { params: { id: string } }
-) {
+// Using NextRequest.nextUrl.pathname to extract the ID parameter
+export async function GET(request: NextRequest) {
   try {
-    const { id } = context.params;
+    // Extract ID from the URL path
+    const pathname = request.nextUrl.pathname;
+    const idMatch = pathname.match(/\/api\/documents\/([^\/]+)\/analysis/);
+    const id = idMatch ? idMatch[1] : null;
+    
+    if (!id) {
+      return NextResponse.json(
+        { error: 'Invalid document ID' },
+        { status: 400 }
+      );
+    }
     
     // Get auth token from cookies
     const token = request.cookies.get('auth_token')?.value;
