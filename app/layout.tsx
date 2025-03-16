@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "EssayHuzz - AI-Powered Essay Analysis",
-  description: "Upload your essay or paper for instant AI analysis, summaries, and insights",
-  keywords: "essay analysis, AI, academic writing, education, essay help",
+  title: "EssayHuzz - AI-Powered Essay Helper",
+  description: "Get accurate quotations, authentic analysis and AI-checker proof essays",
+  keywords: "essay help, AI, academic writing, education, character analysis, quotations",
 };
 
 export default function RootLayout({
@@ -27,7 +27,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}
         suppressHydrationWarning
       >
         <AuthProvider>
