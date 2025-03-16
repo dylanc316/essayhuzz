@@ -24,18 +24,22 @@ export default function AppLayout({ children }: AppLayoutProps) {
   // Auto-hide sidebar on small screens
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth < 768) {
-        setIsSidebarOpen(false);
-      } else {
-        setIsSidebarOpen(true);
+      if (typeof window !== 'undefined') {
+        if (window.innerWidth < 768) {
+          setIsSidebarOpen(false);
+        } else {
+          setIsSidebarOpen(true);
+        }
       }
     };
 
     // Set initial state
     handleResize();
 
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('resize', handleResize);
+      return () => window.removeEventListener('resize', handleResize);
+    }
   }, []);
 
   const toggleSidebar = () => {
@@ -56,7 +60,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile menu button */}
       <button
         onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 hover:bg-gray-700"
+        className="md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
         aria-label="Toggle menu"
       >
         <svg
@@ -93,11 +97,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
             <div className="p-4 border-b border-gray-800">
               <div className="flex items-center space-x-3">
                 <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
-                  <span className="text-lg font-semibold">{user?.name[0]}</span>
+                  <span className="text-lg font-semibold">{user?.name?.[0] || 'U'}</span>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{user?.name}</p>
-                  <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                  <p className="text-sm font-medium truncate">{user?.name || 'User'}</p>
+                  <p className="text-xs text-gray-400 truncate">{user?.email || 'user@example.com'}</p>
                 </div>
               </div>
             </div>
@@ -280,7 +284,8 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <header className="bg-gray-900 border-b border-gray-800 py-4 px-6 hidden md:flex items-center justify-between">
           <button
             onClick={toggleSidebar}
-            className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800"
+            className="p-2 rounded-md hover:bg-gray-800 text-gray-400 hover:text-white"
+            aria-label="Toggle sidebar"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -289,12 +294,21 @@ export default function AppLayout({ children }: AppLayoutProps) {
               viewBox="0 0 24 24"
               stroke="currentColor"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 12h16M4 18h7"
-              />
+              {isSidebarOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 19l-7-7 7-7m8 14l-7-7 7-7"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h7"
+                />
+              )}
             </svg>
           </button>
 
@@ -324,7 +338,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <header className={`bg-gray-900 border-b border-gray-800 py-4 px-6 md:hidden flex items-center justify-between ${isMobileMenuOpen ? 'hidden' : ''}`}>
           <button
             onClick={() => setIsMobileMenuOpen(true)}
-            className="p-2 rounded-md text-gray-400 hover:text-white hover:bg-gray-800"
+            className="p-2 rounded-md hover:bg-gray-800 text-gray-400 hover:text-white"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -350,7 +364,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
           <div>
             {isAuthenticated ? (
               <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
-                <span className="text-sm font-semibold">{user?.name[0]}</span>
+                <span className="text-sm font-semibold">{user?.name?.[0] || 'U'}</span>
               </div>
             ) : (
               <Link href="/login" className="text-blue-400 hover:text-blue-300">

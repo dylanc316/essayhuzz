@@ -102,31 +102,53 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return token;
   };
 
-  // Send verification email (mock)
+  // Send verification email (real implementation)
   const sendVerificationEmail = async (email: string, token: string): Promise<boolean> => {
-    // In a real app, we would send an actual email here
-    console.log(`[MOCK] Sending verification email to ${email} with token ${token}`);
-    console.log(`[MOCK] Verification link: http://localhost:3000/verify-email?token=${token}`);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    // Just for demonstration, we'll automatically "verify" after a delay
-    // In a real app, the user would click a link in their email
-    if (process.env.NODE_ENV === 'development') {
-      setTimeout(() => {
-        mockVerifiedEmails.push(email);
-        
-        // If user is already logged in with this email, update their status
-        if (user && user.email === email) {
-          const updatedUser = { ...user, emailVerified: true };
-          setUser(updatedUser);
-          localStorage.setItem('essayhuzz_user', JSON.stringify(updatedUser));
-        }
-      }, 10000); // Auto-verify after 10 seconds in development
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          token,
+          type: 'verification',
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Log preview URL in development (useful for Ethereal test emails)
+      if (data.previewUrl) {
+        console.log('Email preview URL:', data.previewUrl);
+      }
+      
+      // For demo purposes in development - auto-verify after delay
+      if (process.env.NODE_ENV === 'development') {
+        setTimeout(() => {
+          mockVerifiedEmails.push(email);
+          
+          // If user is already logged in with this email, update their status
+          if (user && user.email === email) {
+            const updatedUser = { ...user, emailVerified: true };
+            setUser(updatedUser);
+            localStorage.setItem('essayhuzz_user', JSON.stringify(updatedUser));
+          }
+          
+          console.log('Development mode: Auto-verified email:', email);
+        }, 10000); // Auto-verify after 10 seconds in development
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error sending verification email:', error);
+      return false;
     }
-    
-    return true;
   };
 
   const login = async (credentials: LoginCredentials): Promise<{ success: boolean; needsVerification?: boolean }> => {
