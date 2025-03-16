@@ -1,5 +1,5 @@
 // scripts/test-db.ts
-import connectToDatabase from '../lib/db';
+import connectToDatabase from '../../lib/lib/db';
 
 async function testConnection() {
   try {

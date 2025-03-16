@@ -4,15 +4,13 @@ import connectToDatabase from '@/lib/db';
 import Analysis from '@/models/Analysis';
 import { getUserFromToken } from '@/lib/tokens';
 
-interface Context {
-  params: {
-    id: string;
-  }
-}
-
-export async function GET(request: NextRequest, context: Context) {
+// Fix the typing to use NextJS's standard params type
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = context.params;
+    const { id } = params;
     
     // Get auth token from cookies
     const token = request.cookies.get('auth_token')?.value;

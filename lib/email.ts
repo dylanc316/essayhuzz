@@ -1,34 +1,59 @@
+// lib/email.ts
 import nodemailer from 'nodemailer';
 
-export async function sendVerificationEmail(
+// Configure email transporter
+export const createTransporter = async () => {
+  // For testing environment, we'll use Ethereal by default
+  const useTestAccount = !process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD;
+  
+  if (useTestAccount) {
+    console.log('SMTP configuration not found. Using Ethereal test account.');
+    return createTestTransporter();
+  }
+  
+  return nodemailer.createTransport({
+    host: process.env.SMTP_HOST,
+    port: parseInt(process.env.SMTP_PORT || '587'),
+    secure: process.env.SMTP_SECURE === 'true',
+    auth: {
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASSWORD,
+    },
+  });
+};
+
+// Create test transporter for development
+const createTestTransporter = async () => {
+  const testAccount = await nodemailer.createTestAccount();
+  
+  const transporter = nodemailer.createTransport({
+    host: testAccount.smtp.host,
+    port: testAccount.smtp.port,
+    secure: testAccount.smtp.secure,
+    auth: {
+      user: testAccount.user,
+      pass: testAccount.pass,
+    },
+  });
+  
+  console.log('Ethereal test account created:', testAccount.user);
+  return transporter;
+};
+
+// Send verification email
+export const sendVerificationEmail = async (
   email: string, 
   token: string,
   name: string
-): Promise<any> {
+): Promise<any> => {
   try {
-    // Create testing account for development if no SMTP credentials exist
-    let testAccount;
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASSWORD) {
-      testAccount = await nodemailer.createTestAccount();
-    }
+    // Get transporter
+    const transporter = await createTransporter();
     
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || (testAccount && testAccount.smtp.host),
-      port: parseInt(process.env.SMTP_PORT || (testAccount && testAccount.smtp.port.toString()) || '587'),
-      secure: process.env.SMTP_SECURE === 'true' || (testAccount && testAccount.smtp.secure) || false,
-      auth: {
-        user: process.env.SMTP_USER || (testAccount && testAccount.user),
-        pass: process.env.SMTP_PASSWORD || (testAccount && testAccount.pass),
-      },
-    });
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
     // Email content
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-    const verificationUrl = `${baseUrl}/verifyemail?token=${token}`;
-    
-    // Send email
-    const info = await transporter.sendMail({
+    const mailOptions = {
       from: `"EssayHuzz" <${process.env.SMTP_FROM || 'noreply@essayhuzz.com'}>`,
       to: email,
       subject: 'Verify your EssayHuzz account',
@@ -37,16 +62,23 @@ export async function sendVerificationEmail(
           <h2>Verify your email for EssayHuzz</h2>
           <p>Hello ${name},</p>
           <p>Please click the link below to verify your email address:</p>
-          <a href="${verificationUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Verify Email</a>
+          <a href="${baseUrl}/verifyemail?token=${token}" style="display: inline-block; background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Verify Email</a>
           <p>If you didn't request this verification, you can safely ignore this email.</p>
           <p>Thanks,<br>The EssayHuzz Team</p>
         </div>
       `,
-    });
+    };
+    
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s', info.messageId);
     
     // For development using Ethereal service
-    if (testAccount && testAccount.user === transporter.options.auth.user) {
-      console.log('Preview URL: %s', nodemailer.getTestMessageUrl(info));
+    if (nodemailer.getTestMessageUrl) {
+      const testMessageUrl = nodemailer.getTestMessageUrl(info);
+      if (testMessageUrl) {
+        console.log('Preview URL: %s', testMessageUrl);
+      }
     }
     
     return info;
@@ -54,4 +86,52 @@ export async function sendVerificationEmail(
     console.error('Error sending email:', error);
     throw error;
   }
-}
+};
+
+// Send password reset email
+export const sendPasswordResetEmail = async (
+  email: string, 
+  token: string,
+  name: string
+): Promise<any> => {
+  try {
+    // Get transporter
+    const transporter = await createTransporter();
+    
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    
+    // Email content
+    const mailOptions = {
+      from: `"EssayHuzz" <${process.env.SMTP_FROM || 'noreply@essayhuzz.com'}>`,
+      to: email,
+      subject: 'Reset your EssayHuzz password',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2>Reset your EssayHuzz password</h2>
+          <p>Hello ${name},</p>
+          <p>Please click the link below to reset your password:</p>
+          <a href="${baseUrl}/reset-password?token=${token}" style="display: inline-block; background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Reset Password</a>
+          <p>If you didn't request this reset, you can safely ignore this email.</p>
+          <p>Thanks,<br>The EssayHuzz Team</p>
+        </div>
+      `,
+    };
+    
+    // Send the email
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Message sent: %s', info.messageId);
+    
+    // For development using Ethereal service
+    if (nodemailer.getTestMessageUrl) {
+      const testMessageUrl = nodemailer.getTestMessageUrl(info);
+      if (testMessageUrl) {
+        console.log('Preview URL: %s', testMessageUrl);
+      }
+    }
+    
+    return info;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
+};
