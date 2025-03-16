@@ -1,7 +1,7 @@
 // middleware.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { verifyToken } from '../lib/lib/tokens';
+import { getUserFromToken } from './lib/tokens';
 
 // Paths that require authentication
 const protectedPaths = [
@@ -45,8 +45,16 @@ export function middleware(request: NextRequest) {
   
   // If token exists but invalid and trying to access protected path
   if (isProtectedPath && token) {
-    const user = verifyToken(token);
-    if (!user) {
+    try {
+      const user = getUserFromToken(token);
+      if (!user) {
+        // Clear invalid token
+        const response = NextResponse.redirect(new URL('/login', request.url));
+        response.cookies.delete('auth_token');
+        return response;
+      }
+    } catch (error) {
+      console.error('Token verification error:', error);
       // Clear invalid token
       const response = NextResponse.redirect(new URL('/login', request.url));
       response.cookies.delete('auth_token');
@@ -56,9 +64,14 @@ export function middleware(request: NextRequest) {
   
   // If token exists and user is trying to access auth pages
   if (isAuthPath && token) {
-    const user = verifyToken(token);
-    if (user) {
-      return NextResponse.redirect(new URL('/dashboard', request.url));
+    try {
+      const user = getUserFromToken(token);
+      if (user) {
+        return NextResponse.redirect(new URL('/dashboard', request.url));
+      }
+    } catch (error) {
+      // Invalid token, but let them continue to auth pages
+      console.error('Token verification error:', error);
     }
   }
   

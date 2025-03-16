@@ -63,29 +63,57 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check if we're in a browser environment
+  const isBrowser = typeof window !== 'undefined';
+
   useEffect(() => {
     const checkAuth = () => {
       try {
-        if (typeof window !== 'undefined') {
+        if (isBrowser) {
+          // Try to get user from local storage
           const storedUser = localStorage.getItem(USER_STORAGE_KEY);
           
           if (storedUser) {
             const parsedUser = JSON.parse(storedUser);
             setUser(parsedUser);
           }
+
+          // Also check with the server to verify the session
+          fetch('/api/auth/me')
+            .then(res => {
+              if (res.ok) return res.json();
+              // If server says we're not authenticated, clear local storage
+              throw new Error('Not authenticated');
+            })
+            .then(data => {
+              if (data.user) {
+                setUser(data.user);
+                localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+              }
+            })
+            .catch(() => {
+              // If server auth check fails, clear storage
+              localStorage.removeItem(USER_STORAGE_KEY);
+              setUser(null);
+            })
+            .finally(() => {
+              setIsLoading(false);
+            });
+        } else {
+          setIsLoading(false);
         }
       } catch (error) {
         console.error('Auth check error:', error);
-        if (typeof window !== 'undefined') {
+        if (isBrowser) {
           localStorage.removeItem(USER_STORAGE_KEY);
         }
-      } finally {
+        setUser(null);
         setIsLoading(false);
       }
     };
     
     checkAuth();
-  }, []);
+  }, [isBrowser]);
 
   const login = async (credentials: LoginCredentials): Promise<{ success: boolean; needsVerification?: boolean }> => {
     setIsLoading(true);
@@ -105,9 +133,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return { success: false };
       }
       
-      if (data.success) {
+      if (data.user) {
         setUser(data.user);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        if (isBrowser) {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(data.user));
+        }
         return { success: true };
       } else if (data.needsVerification) {
         return { success: false, needsVerification: true };
@@ -144,7 +174,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         // Store user data temporarily but don't set as authenticated yet (needs verification)
         const userData = responseData.user;
         setUser(userData);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+        if (isBrowser) {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
+        }
         return { success: true, needsVerification: true };
       }
       
@@ -166,7 +198,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       
       // Clear local state and storage
       setUser(null);
-      localStorage.removeItem(USER_STORAGE_KEY);
+      if (isBrowser) {
+        localStorage.removeItem(USER_STORAGE_KEY);
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -201,7 +235,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (user) {
         const updatedUser = { ...user, emailVerified: true };
         setUser(updatedUser);
-        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+        if (isBrowser) {
+          localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(updatedUser));
+        }
       }
       
       return true;

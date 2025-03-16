@@ -44,13 +44,18 @@ export const generateResetToken = (): string => {
 
 // Get user data from token for client
 export const getUserFromToken = (token: string): any => {
-  const decoded = verifyToken(token);
-  if (!decoded) return null;
-  
-  return {
-    id: decoded.id,
-    name: decoded.name,
-    email: decoded.email,
-    emailVerified: decoded.emailVerified
-  };
+  try {
+    const decoded = verifyToken(token);
+    if (!decoded) return null;
+    
+    return {
+      id: decoded.id,
+      name: decoded.name,
+      email: decoded.email,
+      emailVerified: decoded.emailVerified
+    };
+  } catch (error) {
+    console.error('Error extracting user from token:', error);
+    return null;
+  }
 };

@@ -1,16 +1,15 @@
-// app/api/documents/[id]/analyses/route.ts
+// app/api/documents/[id]/analysis/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db';
 import Analysis from '@/models/Analysis';
 import { getUserFromToken } from '@/lib/tokens';
 
-// Fix the typing to use NextJS's standard params type
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    const { id } = context.params;
     
     // Get auth token from cookies
     const token = request.cookies.get('auth_token')?.value;
