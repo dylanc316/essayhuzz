@@ -2,14 +2,10 @@
 import mongoose from 'mongoose';
 
 // MongoDB connection string with URL encoding for special characters in the password
-const MONGODB_URI = process.env.MONGODB_URI ? 
-  process.env.MONGODB_URI.replace(
-    /:([^\/]+)@/,
-    (match, p1) => `:${encodeURIComponent(p1)}@`
-  ) : '';
+const MONGODB_URI = process.env.MONGODB_URI || '';
 
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable');
+  throw new Error('Please define the MONGODB_URI environment variable in .env.local');
 }
 
 /**
