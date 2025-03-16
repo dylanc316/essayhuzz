@@ -1,9 +1,9 @@
-// app/lib/tokens.ts
+// lib/tokens.ts
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { IUser } from '../models/User';
 
-const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
   console.error('JWT_SECRET is not defined in the environment variables!');
@@ -34,7 +34,12 @@ export const verifyToken = (token: string): any => {
 };
 
 // Generate random token for email verification or password reset
-export const generateRandomToken = (): string => {
+export const generateVerificationToken = (): string => {
+  return crypto.randomBytes(32).toString('hex');
+};
+
+// Generate password reset token
+export const generateResetToken = (): string => {
   return crypto.randomBytes(32).toString('hex');
 };
 

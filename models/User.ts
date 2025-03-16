@@ -1,4 +1,4 @@
-// app/models/User.ts
+// models/User.ts
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
@@ -8,10 +8,6 @@ export interface IUser extends Document {
   password: string;
   avatar?: string;
   emailVerified: boolean;
-  verificationToken?: string;
-  verificationTokenExpiry?: Date;
-  resetPasswordToken?: string;
-  resetPasswordTokenExpiry?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
@@ -44,11 +40,7 @@ const UserSchema: Schema = new Schema(
     emailVerified: {
       type: Boolean,
       default: false
-    },
-    verificationToken: String,
-    verificationTokenExpiry: Date,
-    resetPasswordToken: String,
-    resetPasswordTokenExpiry: Date
+    }
   },
   {
     timestamps: true

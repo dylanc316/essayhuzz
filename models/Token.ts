@@ -1,13 +1,15 @@
-import mongoose from 'mongoose';
+// models/Token.ts
+import mongoose, { Schema, Document } from 'mongoose';
 
-interface IToken {
+export interface IToken extends Document {
   userId: mongoose.Types.ObjectId;
   token: string;
   type: 'verification' | 'reset';
   createdAt: Date;
+  expiresAt: Date;
 }
 
-const TokenSchema = new mongoose.Schema<IToken>({
+const TokenSchema: Schema = new Schema({
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     required: true,
@@ -26,7 +28,10 @@ const TokenSchema = new mongoose.Schema<IToken>({
     type: Date,
     default: Date.now,
     expires: 86400, // Auto-expire after 24 hours
-  },
+  }
 });
 
-export default mongoose.models.Token || mongoose.model<IToken>('Token', TokenSchema);
+// Check if model exists before creating a new one
+const Token = mongoose.models.Token || mongoose.model<IToken>('Token', TokenSchema);
+
+export default Token;

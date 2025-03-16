@@ -1,8 +1,7 @@
-// app/lib/db.ts
+// lib/db.ts
 import mongoose from 'mongoose';
 
-// This ensures that the connection string is correctly encoded, which is particularly
-// important for special characters in the password
+// MongoDB connection string with URL encoding for special characters in the password
 const MONGODB_URI = process.env.MONGODB_URI ? 
   process.env.MONGODB_URI.replace(
     /:([^\/]+)@/,

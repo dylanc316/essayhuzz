@@ -1,102 +1,140 @@
+// app/api/documents/analyze/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-
-// In a real application, this would connect to an AI service like OpenAI or your own ML model
+import connectToDatabase from '@/lib/db';
+import Document from '@/models/Document';
+import Analysis from '@/models/Analysis';
+import { getUserFromToken } from '@/lib/tokens';
 
 export async function POST(request: NextRequest) {
   try {
-    const formData = await request.formData();
-    const pdfFile = formData.get('file') as File | null;
-    const analysisType = formData.get('analysisType') as string | null;
+    // Get auth token from cookies
+    const token = request.cookies.get('auth_token')?.value;
     
-    // Validate inputs
-    if (!pdfFile) {
+    if (!token) {
       return NextResponse.json(
-        { error: 'No PDF file provided' },
+        { error: 'Authentication required' },
+        { status: 401 }
+      );
+    }
+    
+    // Verify and get user from token
+    const user = getUserFromToken(token);
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Invalid authentication' },
+        { status: 401 }
+      );
+    }
+    
+    // Parse request body
+    const body = await request.json();
+    const { documentId, analysisType, title } = body;
+    
+    if (!documentId || !analysisType) {
+      return NextResponse.json(
+        { error: 'Document ID and analysis type are required' },
         { status: 400 }
       );
     }
     
-    if (!analysisType) {
+    // Connect to database
+    await connectToDatabase();
+    
+    // Check if document exists and belongs to user
+    const document = await Document.findOne({ 
+      _id: documentId,
+      userId: user.id
+    });
+    
+    if (!document) {
       return NextResponse.json(
-        { error: 'Analysis type is required' },
-        { status: 400 }
+        { error: 'Document not found or access denied' },
+        { status: 404 }
       );
     }
     
-    // Validate file type
-    if (pdfFile.type !== 'application/pdf') {
-      return NextResponse.json(
-        { error: 'Only PDF files are supported' },
-        { status: 400 }
-      );
+    // Check if analysis already exists
+    const existingAnalysis = await Analysis.findOne({
+      documentId,
+      userId: user.id,
+      type: analysisType
+    });
+    
+    if (existingAnalysis) {
+      return NextResponse.json({
+        success: true,
+        analysis: {
+          id: existingAnalysis._id,
+          documentId: existingAnalysis.documentId,
+          type: existingAnalysis.type,
+          content: existingAnalysis.content,
+          title: existingAnalysis.title,
+          createdAt: existingAnalysis.createdAt,
+          updatedAt: existingAnalysis.updatedAt
+        },
+        isExisting: true
+      });
     }
     
-    // In a real application, you would:
-    // 1. Upload the file to a storage service or process it in memory
-    // 2. Extract text from the PDF
-    // 3. Send the text to an AI service for analysis
-    // 4. Return the analysis results
+    // In a real implementation, you would process the document with an AI service
+    // The placeholder implementation below would be replaced with actual AI processing
     
-    // For this demo, we'll simulate the response with mock data
-    
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Generate mock response based on analysis type
-    let result: string;
+    // Placeholder content based on analysis type
+    let content = '';
     
     switch (analysisType) {
       case 'summary':
-        result = `# Summary of ${pdfFile.name}
-        
-This document presents a comprehensive analysis of artificial intelligence and its impacts on various sectors including healthcare, education, and business. The author argues that while AI offers significant benefits in terms of efficiency and innovation, there are important ethical considerations that must be addressed.
-
-The paper is structured into three main sections. The first examines current AI applications across different industries, highlighting successful case studies and technological breakthroughs. The second section explores potential future developments based on current research trends, with particular emphasis on natural language processing and computer vision. The final section addresses ethical and societal implications, discussing issues such as privacy, algorithmic bias, and the changing nature of work.
-
-Overall, the document provides a balanced perspective on AI's transformative potential while acknowledging the challenges it presents. The author concludes by advocating for a thoughtful approach to AI development that prioritizes human wellbeing and ethical considerations.`;
+        content = `# Summary of ${document.title}\n\nThis is a placeholder summary for ${document.title}. In a real implementation, this would be generated by analyzing the document content using natural language processing and AI techniques.`;
         break;
-        
       case 'keyPoints':
-        result = `# Key Points
-
-* The integration of AI in healthcare has led to improved diagnostic accuracy, with some systems showing performance comparable to expert physicians.
-
-* Education systems globally are adopting AI-powered adaptive learning platforms that personalize instruction based on individual student progress.
-
-* Current limitations in AI include difficulty with contextual understanding, creative thinking, and ethical decision-making.
-
-* Research indicates that AI-related job displacement will be offset by new job creation, though significant workforce transitions will be necessary.
-
-* Regulatory frameworks are struggling to keep pace with rapid AI advancement, creating potential gaps in governance.
-
-* The author identifies three ethical principles that should guide AI development: transparency, fairness, and human-centricity.
-
-* Data privacy concerns remain a significant challenge, particularly regarding the use of personal information to train AI systems.`;
+        content = `# Key Points from ${document.title}\n\n* First key point would be extracted from the document\n* Second key point would be identified through AI analysis\n* Third key point would highlight important concepts\n* Fourth key point would focus on conclusions or findings`;
         break;
-        
       case 'criticalAnalysis':
-        result = `# Critical Analysis
-
-The document presents a generally well-structured and comprehensive overview of artificial intelligence's current and potential impacts. The author demonstrates strong knowledge of the technical aspects of AI and provides relevant examples to support their arguments. The integration of case studies strengthens the credibility of the claims regarding AI's effectiveness in various applications.
-
-However, there are several limitations worth noting. First, while the author acknowledges potential challenges of AI adoption, the treatment of these concerns could be more balanced. The section on job displacement, for instance, takes an optimistic view that is not fully supported by the evidence presented. The cited statistics on job creation versus elimination require more context and critical examination.
-
-The ethical analysis is thoughtful but could be expanded. The discussion of algorithmic bias focuses primarily on technical solutions rather than exploring the deeper social and structural factors that contribute to biased outcomes. Additionally, the paper would benefit from more diverse perspectives, particularly from regions outside North America and Europe where AI adoption may face different challenges.
-
-The methodological approach is sound, drawing on a wide range of sources including academic research, industry reports, and policy documents. However, the author could more clearly acknowledge limitations in the current research landscape, particularly regarding long-term projections which inherently involve uncertainty.
-
-Overall, while the document provides valuable insights into AI's transformative potential, a more nuanced treatment of certain topics and greater attention to global diversity would strengthen the analysis.`;
+        content = `# Critical Analysis of ${document.title}\n\nThis document presents several important concepts worth examining in detail. The arguments are structured logically, though some assumptions could be challenged. The evidence provided supports the main thesis, and the author effectively uses examples to illustrate key points.`;
         break;
-        
+      case 'character':
+        content = `# Character Analysis for ${document.title}\n\nThe main characters in this work are developed through a combination of direct description, dialogue, and actions. Their motivations are revealed gradually, creating a nuanced portrayal that adds depth to the narrative.`;
+        break;
+      case 'theme':
+        content = `# Theme Analysis for ${document.title}\n\nThe primary themes explored in this work include identity, conflict between tradition and progress, and the nature of truth. These themes are woven throughout the narrative and provide a framework for understanding the deeper meaning of the text.`;
+        break;
+      case 'quotations':
+        content = `# Important Quotations from ${document.title}\n\n1. "This would be the first significant quote from the text." (Chapter 1)\n2. "This would be another important quote that reveals a key theme." (Chapter 3)\n3. "This quote would illustrate character development." (Chapter 5)\n4. "This final quote would encapsulate the work's conclusion." (Final Chapter)`;
+        break;
       default:
-        result = `Analysis of ${pdfFile.name} complete. This document appears to be ${(pdfFile.size / 1024 / 1024).toFixed(2)}MB in size and likely contains approximately ${Math.floor(pdfFile.size / 1800)} words. For more specific analysis, please select a specific analysis type.`;
+        content = `# Analysis of ${document.title}\n\nThis is a general analysis of the document. In a production environment, this would be generated using AI to process the document content.`;
     }
     
-    return NextResponse.json({ result });
+    // Create new analysis
+    const analysis = await Analysis.create({
+      userId: user.id,
+      documentId,
+      type: analysisType,
+      content,
+      title: title || `${analysisType} of ${document.title}`
+    });
+    
+    // Update document to mark as analyzed
+    document.isAnalyzed = true;
+    await document.save();
+    
+    return NextResponse.json({
+      success: true,
+      analysis: {
+        id: analysis._id,
+        documentId: analysis.documentId,
+        type: analysis.type,
+        content: analysis.content,
+        title: analysis.title,
+        createdAt: analysis.createdAt,
+        updatedAt: analysis.updatedAt
+      },
+      isExisting: false
+    });
     
   } catch (error) {
     console.error('Analysis error:', error);
-    
     return NextResponse.json(
       { error: 'Failed to analyze document' },
       { status: 500 }

@@ -1,8 +1,8 @@
-// app/lib/email.ts
+// lib/email.ts
 import nodemailer from 'nodemailer';
 
 // Configure email transporter
-export const createTransporter = () => {
+export const createTransporter = async () => {
   // For testing environment, we'll use Ethereal by default
   const useTestAccount = !process.env.SMTP_HOST || !process.env.SMTP_USER || !process.env.SMTP_PASSWORD;
   
@@ -43,13 +43,12 @@ const createTestTransporter = async () => {
 // Send verification email
 export const sendVerificationEmail = async (
   email: string, 
-  token: string
-): Promise<{ success: boolean; previewUrl?: string }> => {
+  token: string,
+  name: string
+): Promise<any> => {
   try {
-    // Get transporter (creates a test account if needed)
-    const transporter = typeof createTransporter === 'function' 
-      ? createTransporter() 
-      : await createTestTransporter();
+    // Get transporter
+    const transporter = await createTransporter();
     
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
@@ -61,6 +60,7 @@ export const sendVerificationEmail = async (
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Verify your email for EssayHuzz</h2>
+          <p>Hello ${name},</p>
           <p>Please click the link below to verify your email address:</p>
           <a href="${baseUrl}/verifyemail?token=${token}" style="display: inline-block; background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Verify Email</a>
           <p>If you didn't request this verification, you can safely ignore this email.</p>
@@ -73,30 +73,30 @@ export const sendVerificationEmail = async (
     const info = await transporter.sendMail(mailOptions);
     console.log('Message sent: %s', info.messageId);
     
-    // For development: provide preview URL for Ethereal
-    let previewUrl;
+    // For development using Ethereal service
     if (nodemailer.getTestMessageUrl) {
-      previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log('Preview URL: %s', previewUrl);
+      const testMessageUrl = nodemailer.getTestMessageUrl(info);
+      if (testMessageUrl) {
+        console.log('Preview URL: %s', testMessageUrl);
+      }
     }
     
-    return { success: true, previewUrl };
+    return info;
   } catch (error) {
-    console.error('Error sending verification email:', error);
-    return { success: false };
+    console.error('Error sending email:', error);
+    throw error;
   }
 };
 
 // Send password reset email
 export const sendPasswordResetEmail = async (
   email: string, 
-  token: string
-): Promise<{ success: boolean; previewUrl?: string }> => {
+  token: string,
+  name: string
+): Promise<any> => {
   try {
-    // Get transporter (creates a test account if needed)
-    const transporter = typeof createTransporter === 'function' 
-      ? createTransporter() 
-      : await createTestTransporter();
+    // Get transporter
+    const transporter = await createTransporter();
     
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
@@ -108,6 +108,7 @@ export const sendPasswordResetEmail = async (
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
           <h2>Reset your EssayHuzz password</h2>
+          <p>Hello ${name},</p>
           <p>Please click the link below to reset your password:</p>
           <a href="${baseUrl}/reset-password?token=${token}" style="display: inline-block; background-color: #2563eb; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Reset Password</a>
           <p>If you didn't request this reset, you can safely ignore this email.</p>
@@ -120,16 +121,17 @@ export const sendPasswordResetEmail = async (
     const info = await transporter.sendMail(mailOptions);
     console.log('Message sent: %s', info.messageId);
     
-    // For development: provide preview URL for Ethereal
-    let previewUrl;
+    // For development using Ethereal service
     if (nodemailer.getTestMessageUrl) {
-      previewUrl = nodemailer.getTestMessageUrl(info);
-      console.log('Preview URL: %s', previewUrl);
+      const testMessageUrl = nodemailer.getTestMessageUrl(info);
+      if (testMessageUrl) {
+        console.log('Preview URL: %s', testMessageUrl);
+      }
     }
     
-    return { success: true, previewUrl };
+    return info;
   } catch (error) {
-    console.error('Error sending password reset email:', error);
-    return { success: false };
+    console.error('Error sending email:', error);
+    throw error;
   }
 };

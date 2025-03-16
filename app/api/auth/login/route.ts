@@ -1,10 +1,9 @@
 // app/api/auth/login/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import connectToDatabase from '../../../lib/db';
-import User from '../../../models/User';
-import { generateToken } from '../../../lib/tokens';
+import connectToDatabase from '@/lib/db';
+import User from '@/models/User';
+import { generateToken } from '@/lib/tokens';
 import { cookies } from 'next/headers';
-import bcrypt from 'bcryptjs';
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Check if password matches
-    const isMatch = await bcrypt.compare(password, user.password);
+    const isMatch = await user.comparePassword(password);
     if (!isMatch) {
       return NextResponse.json(
         { error: 'Invalid email or password' },
