@@ -10,12 +10,16 @@ export async function POST(request: NextRequest) {
     // In production, replace with your actual SMTP credentials
     const testAccount = await nodemailer.createTestAccount();
     
+    // Store auth user for later comparison
+    const authUser = process.env.SMTP_USER || testAccount.user;
+    
+    // Create transporter using Ethereal account or environment variables
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST || testAccount.smtp.host,
       port: parseInt(process.env.SMTP_PORT || testAccount.smtp.port.toString()),
       secure: process.env.SMTP_SECURE === 'true' || testAccount.smtp.secure,
       auth: {
-        user: process.env.SMTP_USER || testAccount.user,
+        user: authUser,
         pass: process.env.SMTP_PASSWORD || testAccount.pass,
       },
     });
@@ -60,7 +64,11 @@ export async function POST(request: NextRequest) {
     
     // For Ethereal test emails, provide the preview URL
     let previewUrl = null;
-    if (testAccount.user === transporter.options.auth.user) {
+    
+    // Check if we're using the test account credentials
+    const isUsingTestAccount = testAccount.user === authUser;
+    
+    if (isUsingTestAccount) {
       previewUrl = nodemailer.getTestMessageUrl(info);
       console.log('Preview URL: %s', previewUrl);
     }
