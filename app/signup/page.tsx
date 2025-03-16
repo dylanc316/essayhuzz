@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export default function Signup() {
   const router = useRouter();
-  const { signup } = useAuth();
+  const { signup, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [registrationSuccess, setRegistrationSuccess] = useState(false);
@@ -21,6 +21,13 @@ export default function Signup() {
     confirmPassword: '',
     agreeToTerms: false
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, router]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -87,7 +94,7 @@ export default function Signup() {
           router.push('/dashboard');
         }
       } else {
-        setError('Account creation failed. Please try again.');
+        setError('Account creation failed. This email might already be registered.');
       }
       
     } catch (err) {
@@ -126,7 +133,7 @@ export default function Signup() {
             </p>
             <div className="text-sm text-gray-500 mb-6 p-4 bg-gray-900 rounded-md">
               <p className="mb-2">
-                <strong>Note:</strong> For demo purposes, your email will be automatically verified in 10 seconds.
+                <strong>Note:</strong> For testing purposes, your account will be automatically verified in a few seconds.
               </p>
               <p>
                 In a production environment, you would need to click the link in the verification email.

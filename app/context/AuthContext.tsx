@@ -56,6 +56,22 @@ export const useAuth = () => {
   return useContext(AuthContext);
 };
 
+// Mock users database - this would be replaced with a real database in production
+const MOCK_USERS: Record<string, User> = {
+  'demo@example.com': {
+    id: '1',
+    name: 'Demo User',
+    email: 'demo@example.com',
+    avatar: '/avatar-placeholder.png',
+    emailVerified: true
+  }
+};
+
+// Mock passwords database
+const MOCK_PASSWORDS: Record<string, string> = {
+  'demo@example.com': 'password'
+};
+
 // Mock email verification storage
 const mockVerificationTokens: Record<string, { email: string; expiresAt: number }> = {};
 const mockVerifiedEmails: string[] = ['demo@example.com'];
@@ -129,20 +145,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
       
       // For demo purposes in development - auto-verify after delay
-      if (process.env.NODE_ENV === 'development') {
-        setTimeout(() => {
-          mockVerifiedEmails.push(email);
-          
-          // If user is already logged in with this email, update their status
-          if (user && user.email === email) {
-            const updatedUser = { ...user, emailVerified: true };
-            setUser(updatedUser);
-            localStorage.setItem('essayhuzz_user', JSON.stringify(updatedUser));
-          }
-          
-          console.log('Development mode: Auto-verified email:', email);
-        }, 10000); // Auto-verify after 10 seconds in development
-      }
+      // This makes the app work without actually clicking email links
+      setTimeout(() => {
+        mockVerifiedEmails.push(email);
+        
+        // If user is already logged in with this email, update their status
+        if (user && user.email === email) {
+          const updatedUser = { ...user, emailVerified: true };
+          setUser(updatedUser);
+          localStorage.setItem('essayhuzz_user', JSON.stringify(updatedUser));
+        }
+        
+        console.log('Auto-verified email for testing:', email);
+      }, 5000); // Auto-verify after 5 seconds for testing
       
       return true;
     } catch (error) {
@@ -157,33 +172,14 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // Demo login
-      if (credentials.email === 'demo@example.com' && credentials.password === 'password') {
-        const userData: User = {
-          id: '1',
-          name: 'Demo User',
-          email: 'demo@example.com',
-          avatar: '/avatar-placeholder.png',
-          emailVerified: true
-        };
-        
-        setUser(userData);
-        localStorage.setItem('essayhuzz_user', JSON.stringify(userData));
-        return { success: true };
-      }
+      // Check if the user exists in our mock database
+      const existingUser = MOCK_USERS[credentials.email];
+      const correctPassword = MOCK_PASSWORDS[credentials.email] === credentials.password;
       
-      // Regular login (simplified)
-      // First check if this is a test email format
-      if (credentials.email.endsWith('@example.com') && credentials.password.length >= 6) {
-        const nameParts = credentials.email.split('@')[0].split('.');
-        const name = nameParts.map(part => 
-          part.charAt(0).toUpperCase() + part.slice(1)
-        ).join(' ');
-        
+      if (existingUser && correctPassword) {
         // Check if email is verified
         const isVerified = mockVerifiedEmails.includes(credentials.email);
         
-        // If not verified, require verification
         if (!isVerified) {
           // Generate and send a new verification token
           const token = generateVerificationToken(credentials.email);
@@ -192,15 +188,43 @@ export function AuthProvider({ children }: AuthProviderProps) {
           return { success: false, needsVerification: true };
         }
         
-        const userData: User = {
+        setUser(existingUser);
+        localStorage.setItem('essayhuzz_user', JSON.stringify(existingUser));
+        return { success: true };
+      }
+      
+      // If no existing user, check if this is a newly registered user trying to log in
+      if (credentials.email.endsWith('@example.com') && credentials.password.length >= 6) {
+        // The simplified approach for testing - create a new user entry if it doesn't exist
+        const isVerified = mockVerifiedEmails.includes(credentials.email);
+        
+        if (!isVerified) {
+          // Generate and send a new verification token
+          const token = generateVerificationToken(credentials.email);
+          await sendVerificationEmail(credentials.email, token);
+          
+          return { success: false, needsVerification: true };
+        }
+        
+        // Create a simple display name from email
+        const nameParts = credentials.email.split('@')[0].split('.');
+        const name = nameParts.map(part => 
+          part.charAt(0).toUpperCase() + part.slice(1)
+        ).join(' ');
+        
+        const newUser: User = {
           id: Date.now().toString(),
           name: name || 'User',
           email: credentials.email,
           emailVerified: true
         };
         
-        setUser(userData);
-        localStorage.setItem('essayhuzz_user', JSON.stringify(userData));
+        // Store new user
+        MOCK_USERS[credentials.email] = newUser;
+        MOCK_PASSWORDS[credentials.email] = credentials.password;
+        
+        setUser(newUser);
+        localStorage.setItem('essayhuzz_user', JSON.stringify(newUser));
         return { success: true };
       }
       
@@ -219,23 +243,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       await new Promise(resolve => setTimeout(resolve, 1500));
       
-      // Generate verification token
-      const token = generateVerificationToken(data.email);
+      // Check if user already exists
+      if (MOCK_USERS[data.email]) {
+        return { success: false, needsVerification: false };
+      }
       
-      // Send verification email
-      await sendVerificationEmail(data.email, token);
-      
-      // Create user with unverified email
-      const userData: User = {
+      // Create new user
+      const newUser: User = {
         id: Date.now().toString(),
         name: `${data.firstName} ${data.lastName}`,
         email: data.email,
         emailVerified: false
       };
       
+      // Store user in mock database
+      MOCK_USERS[data.email] = newUser;
+      MOCK_PASSWORDS[data.email] = data.password;
+      
+      // Generate verification token
+      const token = generateVerificationToken(data.email);
+      
+      // Send verification email
+      await sendVerificationEmail(data.email, token);
+      
       // Store user data in local storage but mark as unverified
-      localStorage.setItem('essayhuzz_user', JSON.stringify(userData));
-      setUser(userData);
+      localStorage.setItem('essayhuzz_user', JSON.stringify(newUser));
+      setUser(newUser);
       
       return { success: true, needsVerification: true };
     } catch (error) {
@@ -293,6 +326,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const updatedUser = { ...user, emailVerified: true };
         setUser(updatedUser);
         localStorage.setItem('essayhuzz_user', JSON.stringify(updatedUser));
+      } else {
+        // Update stored user record
+        const storedUser = MOCK_USERS[tokenData.email];
+        if (storedUser) {
+          storedUser.emailVerified = true;
+          MOCK_USERS[tokenData.email] = storedUser;
+        }
       }
       
       return true;

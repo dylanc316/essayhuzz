@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
   const router = useRouter();
-  const { login, resendVerificationEmail } = useAuth();
+  const { login, resendVerificationEmail, isAuthenticated, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsVerification, setNeedsVerification] = useState(false);
@@ -20,6 +20,13 @@ export default function Login() {
     password: '',
     rememberMe: false
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      router.push('/dashboard');
+    }
+  }, [isAuthenticated, authLoading, router]);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -85,7 +92,7 @@ export default function Login() {
       if (result.success) {
         router.push('/dashboard');
       } else {
-        setError('Demo login failed. Please try regular login.');
+        setError('Demo login failed. Please try again.');
       }
     } catch (err) {
       console.error('Demo login error:', err);
@@ -253,7 +260,7 @@ export default function Login() {
               />
               <label htmlFor="rememberMe" className="ml-2 text-sm">Remember me</label>
             </div>
-            <Link href="#" className="text-sm text-blue-400 hover:underline">
+            <Link href="/forgot-password" className="text-sm text-blue-400 hover:underline">
               Forgot password?
             </Link>
           </div>
