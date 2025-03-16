@@ -1,13 +1,17 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect, useState, Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
-export default function VerifyEmail() {
+// Client component that uses useSearchParams
+function VerifyEmailContent() {
   const { verifyEmail } = useAuth();
   const router = useRouter();
+  
+  // Import useSearchParams dynamically inside the component
+  const { useSearchParams } = require('next/navigation');
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
   
@@ -128,5 +132,20 @@ export default function VerifyEmail() {
         )}
       </div>
     </div>
+  );
+}
+
+// Main page component with Suspense boundary
+export default function VerifyEmail() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-md card p-8 bg-gray-800 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        </div>
+      </div>
+    }>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
