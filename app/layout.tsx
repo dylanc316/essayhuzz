@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
+import "./globals.css"; // Make sure this import is present
 import { AuthProvider } from "./context/AuthContext";
 
 const geistSans = Geist({
@@ -26,6 +26,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="dark">
+      <head>
+        {/* Force CSS reload by adding a timestamp */}
+        <meta name="css-reload" content={new Date().toISOString()} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-900 text-white`}
         suppressHydrationWarning
