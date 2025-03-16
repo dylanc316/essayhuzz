@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
-export default function VerifyEmailContent() {
+// This component uses useSearchParams which needs to be in a client component and wrapped in Suspense
+function VerifyEmailContent() {
   const { verifyEmail } = useAuth();
   const router = useRouter();
   
@@ -131,5 +132,16 @@ export default function VerifyEmailContent() {
         )}
       </div>
     </div>
+  );
+}
+
+// Main component that wraps the content in a Suspense boundary
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center py-12">
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+    </div>}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }
