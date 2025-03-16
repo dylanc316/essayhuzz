@@ -87,10 +87,10 @@ function VerifyEmailContent() {
                 Go to Dashboard
               </Link>
               <Link
-                href="/analyze"
+                href="/login"
                 className="btn-outline w-full py-2 text-center"
               >
-                Start Using EssayHuzz
+                Sign In
               </Link>
             </div>
           </div>
